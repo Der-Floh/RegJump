@@ -13,11 +13,11 @@
     <Title>RegJump</Title>
     <Version>0.0.0</Version>
     <Authors>Der_Floh</Authors>
-    <Description>`RegJump` is a Windows only library that provides a simple function for opening the Windows Registry at a specified location.</Description>
+    <Description>RegJump is a Windows only library that provides a simple function for opening the Windows Registry at a specified location.</Description>
     <PackageProjectUrl>https://github.com/Der-Floh/RegJump</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Der-Floh/RegJump</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>Windows;Registry;Regedit;RegJump</PackageTags>
+    <PackageTags>windows;registry;regedit;regjump;open-registry</PackageTags>
     <PackageId>RegJump</PackageId>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
