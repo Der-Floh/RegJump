@@ -17,7 +17,7 @@
     <PackageProjectUrl>https://github.com/Der-Floh/RegJump</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Der-Floh/RegJump</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>Windows;Registry;RegeditRregJump;Open-Registry</PackageTags>
+    <PackageTags>Windows;Registry;Regedit;RegJump;Open-Registry</PackageTags>
     <PackageId>RegJump</PackageId>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
