@@ -10,6 +10,8 @@ A lightweight Windows library that opens the Windows Registry Editor directly at
 - Open the registry at any path with a single method call
 - Optional elevation via UAC (`runas`) or suppressed UAC prompt
 - Returns the `Process` handle of the launched Registry Editor
+- Accepts hive abbreviations, full hive names, forward slashes, and paths copied straight from the Registry Editor address bar
+- Validates the path up front and throws instead of silently opening the wrong location
 
 ## Requirements
 
@@ -78,6 +80,13 @@ Opens the Windows Registry Editor and navigates to `path`.
 
 **Returns:** `Process` — the started Registry Editor process.
 
+**Throws:**
+
+| Exception               | When                                                              |
+| ----------------------- | ----------------------------------------------------------------- |
+| `ArgumentNullException` | `path` is `null`                                                  |
+| `ArgumentException`     | `path` is empty or does not start with a recognised registry hive |
+
 ---
 
 ### `RegJump.OpenAt(string path, bool runas = false)`
@@ -109,12 +118,31 @@ Opens the Windows Registry Editor at its last visited location.
 | `HKCC`       | `HKEY_CURRENT_CONFIG`   |
 | `HKPD`       | `HKEY_PERFORMANCE_DATA` |
 
+Hive names are matched case-insensitively. Forward slashes are accepted as separators, surrounding quotes and
+trailing separators are stripped, and an optional leading `Computer\` is ignored — so a path copied from the
+Registry Editor address bar can be passed through unchanged:
+
+```csharp
+RegJump.Open(@"Computer\HKEY_CURRENT_USER\Control Panel\Cursors");
+```
+
+A path that is empty or does not begin with one of the hives above throws `ArgumentException` rather than
+launching the Registry Editor at an arbitrary location.
+
 ## How It Works
 
 `RegJump` navigates the Registry Editor by writing the desired path to  
 `HKCU\Software\Microsoft\Windows\CurrentVersion\Applets\Regedit\LastKey` before launching `regedit.exe` — the same mechanism used by Sysinternals RegJump.
 
-When `runas` is `false`, the process is started with `__COMPAT_LAYER=RUNASINVOKER` to suppress any automatic UAC elevation prompt, ensuring the editor opens in the current user context regardless of manifest settings.
+When `runas` is `false`, `regedit.exe` is started directly with `__COMPAT_LAYER=RUNASINVOKER` in its environment to
+suppress the automatic UAC elevation prompt, ensuring the editor opens in the current user context regardless of
+manifest settings.
+
+## Notes
+
+The Registry Editor is a single-instance application. If it is already running, launching it again simply focuses
+the existing window, and that window does **not** re-read the stored path — so `Open(path)` will not re-navigate an
+already open Registry Editor. Close it first if you need the jump to take effect.
 
 ## Contributing
 

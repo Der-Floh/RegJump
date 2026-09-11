@@ -31,7 +31,7 @@ jobs:
 
       - name: Build
         run: dotnet build RegJump/RegJump.csproj
-          -c Release --no-restore -p:GeneratePackageOnBuild=false
+          -c Release --no-restore
 
       - name: Pack
         run: dotnet pack RegJump/RegJump.csproj -c
