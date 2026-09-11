@@ -19,7 +19,6 @@ env:
   DOTNET_VERSION: "10.0.x"
   PROJECT_PATH: RegJump/RegJump.csproj
   PACKAGE_ID: RegJump
-  TARGET_FRAMEWORK: netstandard2.0
   ARTIFACTS_PATH: artifacts
   PACKAGE_ARTIFACT: nuget-package
   NUGET_USER: Der-Floh
@@ -58,7 +57,6 @@ jobs:
           package-dir: ${{ env.ARTIFACTS_PATH }}
           package-id: ${{ env.PACKAGE_ID }}
           version: ${{ steps.version.outputs.value }}
-          target-framework: ${{ env.TARGET_FRAMEWORK }}
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v3
