@@ -38,12 +38,13 @@ public static class RegJump
     /// <param name="path">The registry path to navigate to, in the format <c>HIVE\SubKey\Path</c>. The hive may be an
     /// abbreviation (<c>HKLM</c>) or a full name (<c>HKEY_LOCAL_MACHINE</c>), and an optional leading <c>Computer\</c>
     /// is accepted so paths copied from the Registry Editor address bar can be passed through unchanged.</param>
-    /// <param name="runas">Whether to open with elevated privileges.</param>
+    /// <param name="elevated">Whether to open with elevated privileges.</param>
     /// <returns>The started Registry Editor process.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty or does not start with a known registry hive.</exception>
-    public static Process OpenAt(string path, bool runas = false)
-        => Open(path, runas);
+    [Obsolete("Use Open(string, bool) instead. OpenAt will be removed in a future major version.")]
+    public static Process OpenAt(string path, bool elevated = false)
+        => Open(path, elevated);
 
     /// <summary>
     /// Opens the Registry Editor at the specified registry path.
@@ -52,29 +53,29 @@ public static class RegJump
     /// <param name="path">The registry path to navigate to, in the format <c>HIVE\SubKey\Path</c>. The hive may be an
     /// abbreviation (<c>HKLM</c>) or a full name (<c>HKEY_LOCAL_MACHINE</c>), and an optional leading <c>Computer\</c>
     /// is accepted so paths copied from the Registry Editor address bar can be passed through unchanged.</param>
-    /// <param name="runas">Whether to open with elevated privileges.</param>
+    /// <param name="elevated">Whether to open with elevated privileges.</param>
     /// <returns>The started Registry Editor process.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty or does not start with a known registry hive.</exception>
-    public static Process Open(string path, bool runas = false)
+    public static Process Open(string path, bool elevated = false)
     {
         if (path is null)
             throw new ArgumentNullException(nameof(path));
 
         SetLastKey(NormalizePath(path));
-        return Open(runas);
+        return Open(elevated);
     }
 
     /// <summary>
     /// Opens the Registry Editor at its last visited location.
     /// When opened without admin privileges, only keys that do not require elevation can be edited; all other keys are read-only.
     /// </summary>
-    /// <param name="runas">Whether to open with elevated privileges.</param>
+    /// <param name="elevated">Whether to open with elevated privileges.</param>
     /// <returns>The started Registry Editor process.</returns>
-    public static Process Open(bool runas = false)
+    public static Process Open(bool elevated = false)
     {
         var startInfo = new ProcessStartInfo(RegeditExecutable);
-        if (runas)
+        if (elevated)
         {
             startInfo.UseShellExecute = true;
             startInfo.Verb = ElevationVerb;

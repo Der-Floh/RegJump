@@ -8,7 +8,7 @@ A lightweight Windows library that opens the Windows Registry Editor directly at
 ## Features
 
 - Open the registry at any path with a single method call
-- Optional elevation via UAC (`runas`) or suppressed UAC prompt
+- Optional elevation via UAC (`elevated`) or suppressed UAC prompt
 - Returns the `Process` handle of the launched Registry Editor
 - Accepts hive abbreviations, full hive names, forward slashes, and paths copied straight from the Registry Editor address bar
 - Validates the path up front and throws instead of silently opening the wrong location
@@ -36,16 +36,13 @@ RegJump.Open(@"HKCU\Software\Microsoft\Windows\CurrentVersion");
 
 // Using full hive name
 RegJump.Open(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services");
-
-// Using the OpenAt alias
-RegJump.OpenAt(@"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion");
 ```
 
 ### Open Registry Editor with elevated privileges
 
 ```csharp
-// Opens regedit via UAC prompt (runas)
-RegJump.Open(@"HKLM\SYSTEM\CurrentControlSet\Control", runas: true);
+// Opens regedit via UAC prompt
+RegJump.Open(@"HKLM\SYSTEM\CurrentControlSet\Control", elevated: true);
 ```
 
 ### Open Registry Editor without navigating to a path
@@ -55,7 +52,7 @@ RegJump.Open(@"HKLM\SYSTEM\CurrentControlSet\Control", runas: true);
 RegJump.Open();
 
 // With elevation
-RegJump.Open(runas: true);
+RegJump.Open(elevated: true);
 ```
 
 ### Using the returned Process handle
@@ -69,14 +66,14 @@ regedit.WaitForExit();
 
 ## API Reference
 
-### `RegJump.Open(string path, bool runas = false)`
+### `RegJump.Open(string path, bool elevated = false)`
 
 Opens the Windows Registry Editor and navigates to `path`.
 
 | Parameter | Type     | Description                                                                                            |
 | --------- | -------- | ------------------------------------------------------------------------------------------------------ |
 | `path`    | `string` | Registry path in the format `HIVE\SubKey\Path`                                                         |
-| `runas`   | `bool`   | `true` to request elevation via UAC; `false` (default) to run as the current user without a UAC prompt |
+| `elevated` | `bool`  | `true` to request elevation via UAC; `false` (default) to run as the current user without a UAC prompt |
 
 **Returns:** `Process` — the started Registry Editor process.
 
@@ -89,19 +86,20 @@ Opens the Windows Registry Editor and navigates to `path`.
 
 ---
 
-### `RegJump.OpenAt(string path, bool runas = false)`
+### `RegJump.OpenAt(string path, bool elevated = false)`
 
-Alias for `Open(string path, bool runas)`. Identical behaviour.
+Deprecated alias for `Open(string path, bool elevated)`. Identical behaviour; marked `[Obsolete]` and slated for
+removal in a future major version. Use `Open` instead.
 
 ---
 
-### `RegJump.Open(bool runas = false)`
+### `RegJump.Open(bool elevated = false)`
 
 Opens the Windows Registry Editor at its last visited location.
 
 | Parameter | Type   | Description                                                                                            |
 | --------- | ------ | ------------------------------------------------------------------------------------------------------ |
-| `runas`   | `bool` | `true` to request elevation via UAC; `false` (default) to run as the current user without a UAC prompt |
+| `elevated` | `bool` | `true` to request elevation via UAC; `false` (default) to run as the current user without a UAC prompt |
 
 **Returns:** `Process` — the started Registry Editor process.
 
@@ -134,7 +132,7 @@ launching the Registry Editor at an arbitrary location.
 `RegJump` navigates the Registry Editor by writing the desired path to  
 `HKCU\Software\Microsoft\Windows\CurrentVersion\Applets\Regedit\LastKey` before launching `regedit.exe` — the same mechanism used by Sysinternals RegJump.
 
-When `runas` is `false`, `regedit.exe` is started directly with `__COMPAT_LAYER=RUNASINVOKER` in its environment to
+When `elevated` is `false`, `regedit.exe` is started directly with `__COMPAT_LAYER=RUNASINVOKER` in its environment to
 suppress the automatic UAC elevation prompt, ensuring the editor opens in the current user context regardless of
 manifest settings.
 
