@@ -153,6 +153,16 @@ Contributions are welcome. Please open an issue first to discuss what you would 
 4. Push to the branch (`git push origin feature/my-feature`)
 5. Open a Pull Request
 
+### Building and testing
+
+```shell
+dotnet test RegJump.Test/RegJump.Test.csproj
+```
+
+The integration tests really write `LastKey` and really start the Registry Editor. They restore the
+value afterwards, but **close the Registry Editor first** — an instance that is already open rewrites
+`LastKey` when it exits and would overwrite the restore. On non-Windows hosts they report as skipped.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

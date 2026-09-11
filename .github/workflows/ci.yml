@@ -18,3 +18,4 @@ jobs:
     with:
       project-path: RegJump/RegJump.csproj
       package-id: RegJump
+      test-project: RegJump.Test/RegJump.Test.csproj
