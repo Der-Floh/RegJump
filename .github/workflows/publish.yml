@@ -1,12 +1,5 @@
 name: Publish Release
 
-# The publish job stays in this repository rather than moving into a reusable
-# workflow: nuget.org's trusted publishing requires the repository embedded in the
-# OIDC job_workflow_ref claim to match the repository claim, and a reusable workflow
-# hosted elsewhere makes them disagree. The implementation lives in the shared
-# composite actions, which run as steps inside this job and so keep both claims
-# pointing here.
-
 on:
   release:
     types: [published]
