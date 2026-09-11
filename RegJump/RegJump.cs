@@ -42,7 +42,7 @@ public static class RegJump
     /// <returns>The started Registry Editor process.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty or does not start with a known registry hive.</exception>
-    [Obsolete("Use Open(string, bool) instead. OpenAt will be removed in a future major version.")]
+    [Obsolete("Use Open(string, bool) instead. OpenAt will be removed in a future version.")]
     public static Process OpenAt(string path, bool elevated = false)
         => Open(path, elevated);
 
@@ -103,7 +103,7 @@ public static class RegJump
             segments = segments[1].Split(['\\'], 2);
 
         if (!HiveNames.TryGetValue(segments[0], out var hive))
-            throw new ArgumentException($"Unknown registry hive '{segments[0]}'. Expected HKLM, HKCU, HKCR, HKU, HKCC, HKPD or a full hive name.", nameof(path));
+            throw new ArgumentException($"Unknown registry hive '{segments[0]}'. Expected {string.Join(",", HiveNames.Keys)}.", nameof(path));
 
         var subKey = segments.Length == 2 ? segments[1].Trim('\\') : string.Empty;
         return subKey.Length == 0 ? hive : $@"{hive}\{subKey}";
@@ -111,10 +111,8 @@ public static class RegJump
 
     private static void SetLastKey(string normalizedPath)
     {
-        using var regeditKey = Registry.CurrentUser.CreateSubKey(RegeditKeyPath);
-        if (regeditKey is null)
-            throw new InvalidOperationException($@"Could not create or open HKEY_CURRENT_USER\{RegeditKeyPath}.");
-
+        using var regeditKey = Registry.CurrentUser.CreateSubKey(RegeditKeyPath)
+            ?? throw new InvalidOperationException($@"Could not create or open HKEY_CURRENT_USER\{RegeditKeyPath}.");
         regeditKey.SetValue(LastKeyValueName, normalizedPath, RegistryValueKind.String);
     }
 }
