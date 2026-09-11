@@ -1,0 +1,107 @@
+name: Publish Release
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: nuget-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+  DOTNET_VERSION: "10.0.x"
+  PROJECT_PATH: RegJump/RegJump.csproj
+  PACKAGE_ID: RegJump
+  TARGET_FRAMEWORK: netstandard2.0
+  ARTIFACTS_PATH: artifacts
+  PACKAGE_ARTIFACT: nuget-package
+  NUGET_USER: Der-Floh
+  NUGET_SOURCE: https://api.nuget.org/v3/index.json
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Resolve version
+        id: version
+        uses: ./.github/actions/resolve-version
+        with:
+          tag: ${{ github.event.release.tag_name }}
+
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Pack
+        uses: ./.github/actions/pack
+        with:
+          project-path: ${{ env.PROJECT_PATH }}
+          version: ${{ steps.version.outputs.value }}
+          output-dir: ${{ env.ARTIFACTS_PATH }}
+
+      - name: Verify package
+        id: package
+        uses: ./.github/actions/verify-package
+        with:
+          package-dir: ${{ env.ARTIFACTS_PATH }}
+          package-id: ${{ env.PACKAGE_ID }}
+          version: ${{ steps.version.outputs.value }}
+          target-framework: ${{ env.TARGET_FRAMEWORK }}
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v3
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            ./${{ env.ARTIFACTS_PATH }}/*.nupkg
+            ./${{ env.ARTIFACTS_PATH }}/*.snupkg
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: |
+            ./${{ env.ARTIFACTS_PATH }}/*.nupkg
+            ./${{ env.ARTIFACTS_PATH }}/*.snupkg
+
+      - name: Archive package
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.PACKAGE_ARTIFACT }}
+          path: |
+            ${{ env.ARTIFACTS_PATH }}/*.nupkg
+            ${{ env.ARTIFACTS_PATH }}/*.snupkg
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: NuGet login
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ env.NUGET_USER }}
+
+      - name: Publish to NuGet.org
+        run: >
+          dotnet nuget push "${{ steps.package.outputs.package-path }}"
+          --api-key "${{ steps.login.outputs.NUGET_API_KEY }}"
+          --source "${{ env.NUGET_SOURCE }}"
+          --skip-duplicate
+
+      - name: Publish symbols to NuGet.org
+        run: >
+          dotnet nuget push "${{ steps.package.outputs.symbols-path }}"
+          --api-key "${{ steps.login.outputs.NUGET_API_KEY }}"
+          --source "${{ env.NUGET_SOURCE }}"
+          --skip-duplicate
+        continue-on-error: true

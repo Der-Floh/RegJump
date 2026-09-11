@@ -1,0 +1,114 @@
+name: Verify NuGet Package
+description: Asserts the packed .nupkg and .snupkg carry the expected identity, libraries, docs and metadata
+
+inputs:
+  package-dir:
+    description: Directory holding the packed .nupkg and .snupkg
+    required: true
+  package-id:
+    description: Expected package id (e.g. RegJump)
+    required: true
+  version:
+    description: Expected package version (without v prefix)
+    required: true
+  target-framework:
+    description: Target framework moniker the library ships under (e.g. netstandard2.0)
+    required: true
+
+outputs:
+  package-path:
+    description: Absolute path of the verified .nupkg
+    value: ${{ steps.verify.outputs.package-path }}
+  symbols-path:
+    description: Absolute path of the verified .snupkg
+    value: ${{ steps.verify.outputs.symbols-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Verify package contents
+      id: verify
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+        $dir = [IO.Path]::GetFullPath('${{ inputs.package-dir }}')
+        $id = '${{ inputs.package-id }}'
+        $version = '${{ inputs.version }}'
+        $tfm = '${{ inputs.target-framework }}'
+
+        function Get-SinglePackage([string]$extension) {
+            $found = @(Get-ChildItem -Path $dir -Filter "*$extension" -File)
+            if ($found.Count -ne 1) {
+                throw "Expected exactly one *$extension in $dir, found $($found.Count): $($found.Name -join ', ')"
+            }
+            $expected = "$id.$version$extension"
+            if ($found[0].Name -ne $expected) {
+                throw "Expected $expected but packed $($found[0].Name)."
+            }
+            return $found[0]
+        }
+
+        function Get-Entries([string]$path) {
+            $zip = [IO.Compression.ZipFile]::OpenRead($path)
+            try { return @($zip.Entries | ForEach-Object { $_.FullName }) }
+            finally { $zip.Dispose() }
+        }
+
+        function Assert-Contains([string[]]$entries, [string[]]$required, [string]$name) {
+            foreach ($entry in $required) {
+                if ($entries -notcontains $entry) {
+                    throw "$name is missing $entry. It contains: $($entries -join ', ')"
+                }
+            }
+        }
+
+        $package = Get-SinglePackage '.nupkg'
+        $symbols = Get-SinglePackage '.snupkg'
+
+        $packageEntries = Get-Entries $package.FullName
+        Assert-Contains $packageEntries @(
+            "lib/$tfm/$id.dll"
+            "lib/$tfm/$id.xml"
+            'README.md'
+            'LICENSE'
+            'icon.png'
+            "$id.nuspec"
+        ) $package.Name
+
+        $strayPdbs = @($packageEntries | Where-Object { $_ -like '*.pdb' })
+        if ($strayPdbs.Count -gt 0) {
+            throw "$($package.Name) carries debug symbols that belong in the .snupkg: $($strayPdbs -join ', ')"
+        }
+
+        Assert-Contains (Get-Entries $symbols.FullName) @("lib/$tfm/$id.pdb") $symbols.Name
+
+        $zip = [IO.Compression.ZipFile]::OpenRead($package.FullName)
+        try {
+            $entry = $zip.GetEntry("$id.nuspec")
+            $reader = New-Object IO.StreamReader($entry.Open())
+            try { $nuspec = [xml]$reader.ReadToEnd() } finally { $reader.Dispose() }
+        }
+        finally { $zip.Dispose() }
+
+        $metadata = $nuspec.package.metadata
+        if ($metadata.id -ne $id) { throw "nuspec id is $($metadata.id) but expected $id." }
+        if ($metadata.version -ne $version) { throw "nuspec version is $($metadata.version) but expected $version." }
+
+        foreach ($field in 'description', 'authors', 'projectUrl', 'icon', 'readme', 'license') {
+            if ([string]::IsNullOrWhiteSpace($metadata.$field)) {
+                throw "nuspec is missing a $field value."
+            }
+        }
+        if ([string]::IsNullOrWhiteSpace($metadata.repository.url)) {
+            throw "nuspec is missing a repository url; SourceLink metadata did not survive the build."
+        }
+
+        "package-path=$($package.FullName)" >> $env:GITHUB_OUTPUT
+        "symbols-path=$($symbols.FullName)" >> $env:GITHUB_OUTPUT
+
+        Write-Host "$($package.Name) and $($symbols.Name) verified:"
+        Write-Host "  id/version   $($metadata.id) $($metadata.version)"
+        Write-Host "  repository   $($metadata.repository.url)"
+        Write-Host "  library      lib/$tfm/$id.dll (+ .xml docs)"
