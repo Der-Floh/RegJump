@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RegJump\RegJump.csproj" />
+    <ProjectReference Include="../RegJump/RegJump.csproj" />
   </ItemGroup>
 
 </Project>
