@@ -1,5 +1,12 @@
 name: Publish Release
 
+# The publish job stays in this repository rather than moving into a reusable
+# workflow: nuget.org's trusted publishing requires the repository embedded in the
+# OIDC job_workflow_ref claim to match the repository claim, and a reusable workflow
+# hosted elsewhere makes them disagree. The implementation lives in the shared
+# composite actions, which run as steps inside this job and so keep both claims
+# pointing here.
+
 on:
   release:
     types: [published]
@@ -14,15 +21,11 @@ permissions:
   attestations: write
 
 env:
-  DOTNET_NOLOGO: "true"
-  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
-  DOTNET_VERSION: "10.0.x"
   PROJECT_PATH: RegJump/RegJump.csproj
   PACKAGE_ID: RegJump
   ARTIFACTS_PATH: artifacts
   PACKAGE_ARTIFACT: nuget-package
   NUGET_USER: Der-Floh
-  NUGET_SOURCE: https://api.nuget.org/v3/index.json
 
 jobs:
   publish:
@@ -34,17 +37,15 @@ jobs:
 
       - name: Resolve version
         id: version
-        uses: ./.github/actions/resolve-version
+        uses: Der-Floh/Der-Floh/.github/actions/resolve-version@v1
         with:
           tag: ${{ github.event.release.tag_name }}
 
       - name: Setup .NET
-        uses: ./.github/actions/setup-dotnet
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+        uses: Der-Floh/Der-Floh/.github/actions/setup-dotnet@v1
 
       - name: Pack
-        uses: ./.github/actions/pack
+        uses: Der-Floh/Der-Floh/.github/actions/pack@v1
         with:
           project-path: ${{ env.PROJECT_PATH }}
           version: ${{ steps.version.outputs.value }}
@@ -52,7 +53,7 @@ jobs:
 
       - name: Verify package
         id: package
-        uses: ./.github/actions/verify-package
+        uses: Der-Floh/Der-Floh/.github/actions/verify-package@v1
         with:
           package-dir: ${{ env.ARTIFACTS_PATH }}
           package-id: ${{ env.PACKAGE_ID }}
@@ -83,23 +84,9 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: NuGet login
-        id: login
-        uses: NuGet/login@v1
-        with:
-          user: ${{ env.NUGET_USER }}
-
       - name: Publish to NuGet.org
-        run: >
-          dotnet nuget push "${{ steps.package.outputs.package-path }}"
-          --api-key "${{ steps.login.outputs.NUGET_API_KEY }}"
-          --source "${{ env.NUGET_SOURCE }}"
-          --skip-duplicate
-
-      - name: Publish symbols to NuGet.org
-        run: >
-          dotnet nuget push "${{ steps.package.outputs.symbols-path }}"
-          --api-key "${{ steps.login.outputs.NUGET_API_KEY }}"
-          --source "${{ env.NUGET_SOURCE }}"
-          --skip-duplicate
-        continue-on-error: true
+        uses: Der-Floh/Der-Floh/.github/actions/publish-nuget@v1
+        with:
+          package-path: ${{ steps.package.outputs.package-path }}
+          symbols-path: ${{ steps.package.outputs.symbols-path }}
+          nuget-user: ${{ env.NUGET_USER }}
