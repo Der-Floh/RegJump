@@ -2,6 +2,7 @@
 
 [![NuGet Version](https://img.shields.io/nuget/vpre/RegJump)](https://www.nuget.org/packages/RegJump)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/RegJump)](https://www.nuget.org/packages/RegJump)
+[![CI](https://github.com/Der-Floh/RegJump/actions/workflows/ci.yml/badge.svg)](https://github.com/Der-Floh/RegJump/actions/workflows/ci.yml)
 
 A lightweight Windows library that opens the Windows Registry Editor directly at a specified registry key path.
 

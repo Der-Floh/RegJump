@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+  DOTNET_VERSION: "10.0.x"
+  PROJECT_PATH: RegJump/RegJump.csproj
+  PACKAGE_ID: RegJump
+  TARGET_FRAMEWORK: netstandard2.0
+  ARTIFACTS_PATH: artifacts
+  PACKAGE_ARTIFACT: nuget-package
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore ${{ env.PROJECT_PATH }} -clp:ForceConsoleColor
+
+      - name: Build
+        run: dotnet build ${{ env.PROJECT_PATH }} -c Release --no-restore -clp:ForceConsoleColor
+
+  package:
+    name: Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: ./.github/actions/setup-dotnet
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Resolve preview version
+        id: version
+        run: echo "value=0.0.0-ci.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Pack
+        uses: ./.github/actions/pack
+        with:
+          project-path: ${{ env.PROJECT_PATH }}
+          version: ${{ steps.version.outputs.value }}
+          output-dir: ${{ env.ARTIFACTS_PATH }}
+
+      - name: Verify package
+        uses: ./.github/actions/verify-package
+        with:
+          package-dir: ${{ env.ARTIFACTS_PATH }}
+          package-id: ${{ env.PACKAGE_ID }}
+          version: ${{ steps.version.outputs.value }}
+          target-framework: ${{ env.TARGET_FRAMEWORK }}
+
+      - name: Archive package
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.PACKAGE_ARTIFACT }}
+          path: |
+            ${{ env.ARTIFACTS_PATH }}/*.nupkg
+            ${{ env.ARTIFACTS_PATH }}/*.snupkg
+          if-no-files-found: error
+          retention-days: 14
