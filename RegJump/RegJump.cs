@@ -92,7 +92,7 @@ public static class RegJump
     /// <summary>
     /// Expands a hive abbreviation to its full name and strips any leading <c>Computer\</c> segment.
     /// </summary>
-    private static string NormalizePath(string path)
+    internal static string NormalizePath(string path)
     {
         var cleaned = path.Trim().Trim('"').Replace('/', '\\').Trim('\\');
         if (cleaned.Length == 0)
