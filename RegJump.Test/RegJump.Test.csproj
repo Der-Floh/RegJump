@@ -4,8 +4,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <AssemblyName>RegJump.Test</AssemblyName>
-    <!-- Not RegJump.*: the library type lives in the global namespace, so a namespace
-         starting with RegJump would shadow it and every reference would be CS0118. -->
     <RootNamespace>RegJumpTest</RootNamespace>
   </PropertyGroup>
 
