@@ -16,7 +16,7 @@ if "%VERSION%"=="" (
 
 dotnet restore RegJump.slnx || exit /b 1
 dotnet build RegJump.slnx -c Release --no-restore -p:Version=%VERSION% || exit /b 1
-dotnet test RegJump.Test/RegJump.Test.csproj -c Release --no-build || exit /b 1
+dotnet test --project RegJump.Test/RegJump.Test.csproj -c Release --no-build || exit /b 1
 dotnet pack RegJump/RegJump.csproj -c Release --no-build -p:Version=%VERSION% -o ./artifacts || exit /b 1
 
 echo.

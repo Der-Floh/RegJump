@@ -18,7 +18,7 @@ fi
 
 dotnet restore RegJump.slnx
 dotnet build RegJump.slnx -c Release --no-restore -p:Version="$VERSION"
-dotnet test RegJump.Test/RegJump.Test.csproj -c Release --no-build
+dotnet test --project RegJump.Test/RegJump.Test.csproj -c Release --no-build
 dotnet pack RegJump/RegJump.csproj -c Release --no-build -p:Version="$VERSION" -o ./artifacts
 
 echo
